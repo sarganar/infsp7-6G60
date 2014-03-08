@@ -1,8 +1,8 @@
-Version 1/100713 of Multi P (for Glulx only) by Sarganar begins here.
+Version 1/140304 of Multi P (for Glulx only) by Sarganar begins here.
 
 "Extension que permite juegos multijugador en I7. Para usar junto con dispachers, como Rebot."
 
-"FOR BUILD 6E72. Many Thanx to Jesse McGrew for the main code, from Guncho project."
+"FOR BUILD 6G60. Many Thanx to Jesse McGrew for the main code, from Guncho project."
 
 [TODO:
 
@@ -13,15 +13,21 @@ Version 1/100713 of Multi P (for Glulx only) by Sarganar begins here.
 
 *ojo al usar tell combinado con say en una rule: Tell, cierra el tags y los siguientes says salen como PUBLICO. BUG?
 
+*En Rebot, no se puede usar el caracter < ,porque el parsing de multifloydzx lo toma como parte de la etiqueta </whisper>
+
 NEW:
+2014.0301
+* Sync with Build6G60
+* Incremento del buffer de recepcion comando del jugador, para no truncar texto en comando ´decir´
+
 2010.713
 * Sync with Build6E72
 
 901.15
 * To polite reject player command
 * Codding para soportar personajes reservados (Multivamp)
-*cleanup the current PC
-*set PC gender rule deshabilitado, mejora trabajar con los female y male comunes
+* cleanup the current PC
+* set PC gender rule deshabilitado, mejor trabajar con los female y male comunes
 ]
 
 
@@ -41,7 +47,8 @@ When play begins: move yourself to the Recibidor, without printing a room descri
    se espera a que alguien se añada al juego real. No se mueve el objeto yourself al corral porque eso genera
    un error en tiempo de ejecucion]
 
-Recibidor is a room. The description of Recibidor is usually "Bienvenido al recibidor del juego. Para entrar escribe 'jugar como tu_nombre'. Ej: jugar como Sancho."
+Recibidor is a room. 
+The description of Recibidor is usually "Bienvenido al recibidor del juego. Para entrar escribe 'jugar como tu_nombre'. Ej: jugar como Sancho."
 
 
 Chapter 1 - The PC kind
@@ -62,7 +69,7 @@ A PC has indexed text called the low-mud-name.
 [The description of a PC is "[possibly customized description of the item described]".]
 
 After examining a PC (this is the list PC possessions after examining rule):
-    if the noun is wearing something, say "[The noun] is wearing [a list of things worn by the noun.";
+    if the noun is wearing something, say "[The noun] is wearing [a list of things worn by the noun].";
     if the noun is carrying something, say "[The noun] is carrying [a list of things carried by the noun]."
 
 [To say possibly customized description of (victim - PC):
@@ -256,22 +263,23 @@ Use competitive scoring translates as (- Constant COMPETITIVE_SCORING; -).
 
 Include (-
 [ PRINT_OBITUARY_HEADLINE_R;
-    print "<$a>^^    ";
+    print "<$a>^^    "; !GUNCHO, <$a> added
     VM_Style(ALERT_VMSTY);
     print "***";
+    !GUNCHO
     #ifdef COMPETITIVE_SCORING;
-    if (deadflag == 1) print " ", (the) player, " has lost ";
-    if (deadflag == 2) print " ", (the) player, " has won ";
+    if (deadflag == 1) print " ", (the) player, " ha perdido ";
+    if (deadflag == 2) print " ", (the) player, " ha ganado ";
     #ifnot; ! cooperative scoring
-    if (deadflag == 1) print " You have lost ";
-    if (deadflag == 2) print " You have won ";
+    if (deadflag == 1) print " Has perdido ";
+    if (deadflag == 2) print " Has ganado ";
     #endif; ! scoring type
+    !/GUNCHO
     if (deadflag == 3) L__M(##Miscellany, 75);
-    
     if (deadflag ~= 0 or 1 or 2 or 3)  {
         print " ";
         if (deadflag ofclass Routine) (deadflag)();
-        if (deadflag ofclass String) print (string) deadflag;
+		if (deadflag ofclass String) print (string) deadflag;
         print " ";
     }
     print "***";
@@ -536,6 +544,7 @@ Instead of asking the noun about something (this is the standard chatting rule):
 
 Emoting is an action applying to one topic.
 Understand "emo [text]" as emoting.
+[Understand "e [text]" as emoting.]
 
 Instead of emoting (this is the standard emoting rule):
 	let the full emote be "[The player] [topic understood]";
@@ -544,6 +553,7 @@ Instead of emoting (this is the standard emoting rule):
 
 ChatAlling is an action applying to one topic.
 Understand "todos [text]" as ChatAlling.
+Understand "t [text]" as ChatAlling.
 
 Instead of ChatAlling (this is the standard ChatAlling rule):
 	let the full emote be "[The player]:'[topic understood]'";
@@ -666,9 +676,9 @@ Check switching score notification on (this is the block notify on rule):
 Check switching score notification off (this is the block notify off rule):
     say "Changing the score notification setting is not permitted." instead.
 
-Understand "undo" as a mistake ("Sorry, undo is not available.").
+[Understand "undo" as a mistake ("Sorry, undo is not available.").
 Understand "oops" as a mistake ("Don't worry about it.").
-Understand "oops [text]" as a mistake ("Sorry, typo correction is not available.").
+Understand "oops [text]" as a mistake ("Sorry, typo correction is not available.").] [desactivar estoy mistakes, para activar los sapnish mas adelante (no se sobreescriben)]
 
 Chapter 4 - Player interactions
 
@@ -811,6 +821,7 @@ Include (-
   .ReType;
 
 	cobj_flag = 0;
+	actors_location = ScopeCeiling(player);
     BeginActivity(READING_A_COMMAND_ACT); if (ForActivity(READING_A_COMMAND_ACT)==false) {
 		Keyboard(buffer,parse);
 		players_command = 100 + WordCount();
@@ -896,7 +907,8 @@ Include (-
 
     if (verb_word == AGAIN2__WD or AGAIN3__WD) verb_word = AGAIN1__WD;
     if (verb_word == AGAIN1__WD) {
-	print "['again' may only be used on a line by itself. Sorry.]^"; ! guncho; all 'again' section has been dropped.
+	!print "['again' may only be used on a line by itself. Sorry.]^"; ! guncho; all 'again' section has been dropped.
+	print "[La ordeb 'repetir' debe ir solita. Lo siento.]^"; ! guncho; all 'again' section has been dropped.
             jump ReType;
         }
 
@@ -930,8 +942,7 @@ Include (-
         else { wn = verb_wordnum; verb_word = NextWord(); }
     }
     else usual_grammar_after = 0;
-    
-    
+
 -) instead of "Parser Letter A" in "Parser.i6t".
 
 [NounDomain: el flujo de desambiguacion se interrumpe.
@@ -940,6 +951,7 @@ otro jugador.
 ]
 
 Include (-
+
 [ NounDomain domain1 domain2 context
 	first_word i j k l answer_words marker;
     #Ifdef DEBUG;
@@ -1011,6 +1023,12 @@ Include (-
 
     if (number_matched == 1) i = match_list-->0;
     if (number_matched > 1) {
+		i = true;
+	    if (number_matched > 1)
+	    	for (j=0 : j<number_matched-1 : j++)
+				if (Identical(match_list-->j, match_list-->(j+1)) == false)
+					i = false;
+		if (i) dont_infer = true;
         i = Adjudicate(context);
         if (i == -1) rfalse;
         if (i == 1) rtrue;       !  Adjudicate has made a multiple
@@ -1027,7 +1045,7 @@ Include (-
     ! (Except, we don't note which of a pile of identical objects.)
 
     if (i ~= 0) {
-        if (dont_infer) return i;
+    	if (dont_infer) return i;
         if (inferfrom == 0) inferfrom=pcount;
         pattern-->pcount = i;
         return i;
@@ -1040,7 +1058,7 @@ Include (-
     ! from - instead we go and ask a more suitable question...
 
 !    if (match_from > num_words) jump Incomplete;
-    if (match_from > num_words)  rfalse; !infsp MultiP; interrumpir flujo.
+    if (match_from > num_words)  rfalse; !MultiP; interrumpir flujo.
 
 
 
@@ -1049,9 +1067,13 @@ Include (-
 
 	BeginActivity(ASKING_WHICH_DO_YOU_MEAN_ACT);
 	if (ForActivity(ASKING_WHICH_DO_YOU_MEAN_ACT)) jump SkipWhichQuestion;
-
-    if (context==CREATURE_TOKEN) L__M(##Miscellany, 45);
-    else                         L__M(##Miscellany, 46);
+	j = 1; marker = 0;
+	for (i=1 : i<=number_of_classes : i++) {
+		while (((match_classes-->marker) ~= i) && ((match_classes-->marker) ~= -i))
+			marker++;
+		if (match_list-->marker hasnt animate) j = 0;
+	}
+	if (j) L__M(##Miscellany, 45); else L__M(##Miscellany, 46);
 
     j = number_of_classes; marker = 0;
     for (i=1 : i<=number_of_classes : i++) {
@@ -1063,7 +1085,7 @@ Include (-
         if (i < j-1)  print (string) COMMA__TX;
         if (i == j-1) {
 			#Ifdef SERIAL_COMMA;
-			print ",";
+			if (j ~= 2) print ",";
         	#Endif; ! SERIAL_COMMA
         	print (string) OR__TX;
         }
@@ -1072,7 +1094,7 @@ Include (-
 
 	.SkipWhichQuestion; EndActivity(ASKING_WHICH_DO_YOU_MEAN_ACT);
 
-	rfalse; !infsp MultiP; interrumpir flujo de pregunat para desambiguar. Devuelve false
+	rfalse; !MultiP; interrumpir flujo de preguntar para desambiguar. Devuelve false
 
     ! ...and get an answer:
 
@@ -1082,11 +1104,11 @@ Include (-
     #Endif; ! TARGET_ZCODE
     answer_words=Keyboard(buffer2, parse2);
 
-    ! Check for another player's command or a system command [Guncho]
+    !Guncho Check for another player's command or a system command 
     if (IsOtherCommand(buffer2)) {
         VM_CopyBuffer(buffer, buffer2);
         jump RECONSTRUCT_INPUT;
-    }![/Guncho]
+    }!/Guncho
 
     ! Conveniently, parse2-->1 is the first word in both ZCODE and GLULX.
     first_word = (parse2-->1);
@@ -1107,6 +1129,15 @@ Include (-
         L__M(##Miscellany, 47);
         jump WhichOne;
     }
+
+	! Look for a comma, and interpret this as a fresh conversation command
+	! if so:
+
+	for (i=1 : i<=answer_words : i++)
+		if (WordFrom(i, parse2) == comma_word) {
+            VM_CopyBuffer(buffer, buffer2);
+            jump RECONSTRUCT_INPUT;		
+		}
 
     ! If the first word of the reply can be interpreted as a verb, then
     ! assume that the player has ignored the question and given a new
@@ -1146,7 +1177,7 @@ Include (-
     #Ifnot; ! TARGET_GLULX
     k = WordAddress(match_from) - buffer;
     l = (buffer2-->0) + 1;
-    for (j=buffer+INPUT_BUFFER_LEN-1 : j>=buffer+k+l : j-- )   j->0 = j->(-l);
+    for (j=buffer+INPUT_BUFFER_LEN-1 : j>=buffer+k+l : j-- ) j->0 = j->(-l);
     for (i=0 : i<l : i++) buffer->(k+i) = buffer2->(WORDSIZE+i);
     buffer->(k+l-1) = ' ';
     buffer-->0 = buffer-->0 + l;
@@ -1167,6 +1198,7 @@ Include (-
     #Endif; ! LanguageToInformese
 	num_words = WordCount();
     players_command = 100 + WordCount();
+    actors_location = ScopeCeiling(player);
 	FollowRulebook(Activity_after_rulebooks-->READING_A_COMMAND_ACT, true);
 
     return REPARSE_CODE;
@@ -1180,18 +1212,17 @@ Include (-
     if (context == CREATURE_TOKEN) L__M(##Miscellany, 48);
     else                           L__M(##Miscellany, 49);
 
-
     #Ifdef TARGET_ZCODE;
     for (i=2 : i<INPUT_BUFFER_LEN : i++) buffer2->i=' ';
     #Endif; ! TARGET_ZCODE
 !    DisambigMode(); ! Guncho
     answer_words = Keyboard(buffer2, parse2);
 
-    ! Check for another player's command or a system command - Guncho
+    ! Guncho Check for another player's command or a system command 
     if (IsOtherCommand(buffer2)) {
         VM_CopyBuffer(buffer, buffer2);
         jump RECONSTRUCT_INPUT;
-    }
+    }!/Guncho
 
     first_word=(parse2-->1);
     #Ifdef LanguageIsVerb;
@@ -1310,6 +1341,7 @@ Include (-
 -) instead of "Noun Domain" in "Parser.i6t".
 
 Include (-
+!cosas del server guncho, no creo que apliquen aqui.
 [ DisambigMode  i end c;
 	print "[$d ";
 
@@ -1357,7 +1389,8 @@ Include (-
     if (~~(obj ofclass K8_person)) return RunTimeProblem(RTP_CANTCHANGE, obj);
     if (~~(OnStage(obj, -1))) return RunTimeProblem(RTP_CANTCHANGEOFFSTAGE, obj);
     if (obj == player) return;
-! guncho zone: set pronouns correctly
+
+! guncho : set pronouns correctly
     if (player ofclass i7_pc_kind) {
         pn = player.&pronouns;
 !        pn-->0 = PronounValue('him');
@@ -1380,10 +1413,10 @@ Include (-
 	SetPronoun('-la', pn-->2);
 	SetPronoun('-las', pn-->3);
     }
-! guncho zone
+! /guncho 
 
     give player ~concealed;
-    ! if (player has remove_proper) give player ~proper;
+    ! if (player has remove_proper) give player ~proper;!guncho: se comentaria esta linea
     if (player == selfobj) {
     	player.saved_short_name = player.short_name; player.short_name = FORMER__TX;
     }
@@ -1391,9 +1424,11 @@ Include (-
     if (player == selfobj) {
     	player.short_name = player.saved_short_name;
     }
+    !guncho: se comentaria 2 linea y no se da propiedad 'proper'
     ! if (player hasnt proper) give player remove_proper; ! when changing out again
     ! give player concealed proper;
     give player concealed;
+    !/guncho
 
     location = LocationOf(player); real_location = location;
     MoveFloatingObjects();
@@ -1411,7 +1446,8 @@ Replace CDefArt;
 Include (-
 [ CDefArt obj i;
     i = indef_mode; indef_mode = false;
-    if ((obj ofclass Object) && (obj has proper)) {
+    !if ((obj ofclass Object) && (obj has proper || obj == player)) {
+    if ((obj ofclass Object) && (obj has proper)) {!guncho
     	indef_mode = NULL;
     	caps_mode = true;
     	print (PSN__) obj;
@@ -1432,19 +1468,19 @@ Chapter 7 - "Actions" segment
 
 [Evitar dar ordenes a otros jugadores]
 Include (-
-[ REQUESTED_ACTIONS_REQUIRE_R;
+[ REQUESTED_ACTIONS_REQUIRE_R rv;
 	if ((actor ~= player) && (act_requester)) { ! guncho
 		if (actor ofclass i7_pc_kind) {
 !			print "You can't order other players.^";
-			print "No puedes dar ordenes a otros jugadores.^";
+			print "No puedes dar ordenes a otros jugadores así. Usa el comando ´decir´.^";
 			RulebookFails(); rtrue;
 		}! /guncho
 		@push say__p;
 		say__p = 0;
-		ProcessRulebook(PERSUADE_RB);
+		rv = ProcessRulebook(PERSUADE_RB);
 		if (RulebookSucceeded() == false) {
-			if (say__p == FALSE) L__M(##Miscellany, 72, actor);
-			RulebookFails(); rtrue;
+			if ((deadflag == false) && (say__p == FALSE)) L__M(##Miscellany, 72, actor);
+			ActRulebookFails(rv); rtrue;
 		}
 		@pull say__p;
 	}
@@ -1453,6 +1489,60 @@ Include (-
 -) instead of "Requested Actions Require Persuasion Rule" in "Actions.i6t".
 
 After asking which do you mean: say "(Debes re-escribir la orden COMPLETA.)";woff.
+
+Chapter 8 - Hack for "say" command
+
+Include (-
+Array gg_event --> 4;
+Array gg_arguments buffer 28;
+Global gg_mainwin = 0;
+Global gg_statuswin = 0;
+Global gg_quotewin = 0;
+Global gg_scriptfref = 0;
+Global gg_scriptstr = 0;
+Global gg_savestr = 0;
+Global gg_commandstr = 0;
+Global gg_command_reading = 0;      ! true if gg_commandstr is being replayed
+Global gg_foregroundchan = 0;
+Global gg_backgroundchan = 0;
+
+!Constant INPUT_BUFFER_LEN = 260;    ! No extra byte necessary
+!Constant MAX_BUFFER_WORDS = 20;
+!Constant PARSE_BUFFER_LEN = 61;
+
+! MULTI P - increase buffer (for `say` cmd)---------------
+Constant INPUT_BUFFER_LEN = 560; ! No extra byte necessary
+Constant MAX_BUFFER_WORDS = 60;  !MultiP, test aumentar max cant de palabras del texto de entrada
+Constant PARSE_BUFFER_LEN = 181; !(MAX_BUFFER_WORDS*3)+1
+! -------------------------------
+
+Array  buffer    buffer INPUT_BUFFER_LEN;
+Array  buffer2   buffer INPUT_BUFFER_LEN;
+Array  buffer3   buffer INPUT_BUFFER_LEN;
+Array  parse     --> PARSE_BUFFER_LEN;
+Array  parse2    --> PARSE_BUFFER_LEN;
+
+!constant ECHO_COMMANDS =1;
+
+-) instead of "Variables and Arrays" in "Glulx.i6t".
+
+Include (-
+[ SetPlayersCommand indt_from i len at len2;
+	len = IT_CharacterLength(indt_from);
+	!if (len > 118) len = 118;
+	len2 = (INPUT_BUFFER_LEN-WORDSIZE)-1; !MULTIP - increase limit
+	if (len > len2) len = len2;           !MULTIP - increase limit
+	#ifdef TARGET_ZCODE;
+	buffer->1 = len; at = 2;
+	#ifnot;
+	buffer-->0 = len; at = 4;
+	#endif;
+	for (i=0:i<len:i++) buffer->(i+at) = CharToCase(BlkValueRead(indt_from, i), 0);
+	for (:at+i<120:i++) buffer->(at+i) = ' ';
+	VM_Tokenise(buffer, parse);
+	players_command = 100 + WordCount(); ! The snippet variable ``player's command''
+];
+-) instead of "Setting the Player's Command" in "IndexedText.i6t".
 
 
 Part 6 - Spanish Section
@@ -1677,9 +1767,9 @@ The block notify off rule is not listed in any rulebook.
 Check switching score notification off (this is the spanish block notify off rule):
     say "No se puede cambiar las opciones de puntuación." instead.
 
-Understand "undo" as a mistake ("Lo lamento, undo no está permitido.").
+Understand "undo" as a mistake ("Lo lamento, undo no está permitido. Si lo deseas puedes llorar y correr en circulos.").
 Understand "oops" as a mistake ("No te preocupes.").
-Understand "oops [text]" as a mistake ("Lo siento, no puedes corregir ordenes previas.").
+Understand "oops [text]" as a mistake ("Lo siento, no puedes corregir ordenes previas. ¿Quieres que llame a tu mamá?").
 
 
 Chapter 4 - Player interactions
